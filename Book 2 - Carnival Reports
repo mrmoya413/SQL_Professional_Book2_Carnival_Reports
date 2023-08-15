@@ -1,0 +1,27 @@
+Book 2 - Carnival Reports
+Carnival now has hired some top-notch business analysts and product managers. Being data-driven in how decisions are made, these teammates need you to design and produce complex reports about sales, inventory, salespeople performance, dealerships locations, and customer retention.
+
+Chapters
+#	Carnival Reporting & Analysis
+1	Basic Query Review
+2	Filtering Data
+3	Joining Data
+4	Aggregation and Grouping
+5	Complex Joins
+6	Subqueries
+7	Common Table Expressions [CTE]
+8	Window Functions
+9	Carnival Sales
+10	Carnival Inventory Turnover
+11	Carnival Employee Recognition
+12	Carnival Customer Loyalty
+13	Virtual Tables with Views
+14	Saving Your Views
+👨‍👨‍👦‍👦	Team Project: Carnival Reports
+#	Cheat Sheets
+1	SQL Cheat Sheet
+#	Extra Query Practice
+1	SQL MurderMystery
+1	SQL Island
+1	SQL Police Department
+1	Schmaverse
