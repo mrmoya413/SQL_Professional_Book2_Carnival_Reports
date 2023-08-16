@@ -1,4 +1,4 @@
-Book 2 Carnival Reports
+--Book 2 Carnival Reports 
 
 --Selecting All Vehicles
 --Start off with a query to view all vehicles in your database.
@@ -166,8 +166,6 @@ INNER JOIN salestypes s2 ON s.sales_type_id = s2.sales_type_id
 GROUP BY d.business_name, s2.sales_type_name 
 ORDER BY business_name desc;
 
----------------------------------------------------------------------------
-
 /* Practice: Leased Types
  * Produce a report that determines the most popular vehicle model that is leased.
  */
@@ -199,63 +197,126 @@ WHERE s.sales_type_id = 1
 GROUP BY v2.model, e2.employee_type_name 
 ORDER BY count DESC;
 
+-------------------------------------------------------------------------------------------
 
 --CHAPTER 7:
-/* Practice:
- * For the top 5 dealerships, which employees made the most sales? - employee name
- * For the top 5 dealerships, which vehicle models were the most popular in sales?
- * For the top 5 dealerships, were there more sales or leases?
- */
+--Practice:
+--	1. For the top 5 dealerships, which employees made the most sales? - employee name*/
 
 Answer:
---THIS DIDNT WORK
-/*SELECT max(e.sales_type_id)
-FROM (
-SELECT s.dealership_id, s.sales_type_id, count(s.sale_id) AS car_sales
-FROM sales s 
-GROUP BY s.dealership_id , s.sales_type_id 
-ORDER BY car_sales DESC
-LIMIT 5 ) AS top5
-FROM sales s
-JOIN s.*/
 
-/* internal analysis:
-DEALERSHIP HAS DEALERSHIP ID AND BUSINESS NAME
-ALSO NEED DEALERSHIPEMPLOYEES TO TIE TO DEALERSHIP_ID TO GET THE EMPLOYEE ID.
-NEED EMPLOYEES FOR THE EMPLOYEE_TYPE_ID
-NEED EMPLOYEE TYPES FOR THE TYPE OF EMPLOYEE
-AND NEED SALES FOR THE TYPE OF SALE AND THE COUNT ON SALE ID */
+/* Results below.  I'm not confident that the employees are correct, but I did the best I could. */
 
-/* I was able to put together the actual CTE with "Tablescombined", but im having trouble
- * with the next select statement to just give me the top performing salesmen by the location 
- * 
- * I LEFT HERE! WE'RE STILL WORKING ON PUTTING TOGETHER THIS DAMN CTE! 
- * */
+WITH TopPerformingDealerships AS (
 
-WITH TablesCombined AS (
-
-SELECT 
-	d.business_name, count(*) AS Transactions
-FROM sales s 
-	LEFT JOIN dealerships d ON d.dealership_id = s.dealership_id 
-GROUP BY 
-	d.business_name 
-ORDER BY 
-	Transactions DESC
-LIMIT 5
+	SELECT 
+		d.business_name,
+		s.dealership_id, 
+		count(s.sale_id) AS total_sales
+	FROM dealerships d 
+	JOIN sales s ON d.dealership_id = s.dealership_id 
+	GROUP BY d.business_name, s.dealership_id 
+	ORDER BY total_sales DESC
+	LIMIT 5
 
 )
 
-SELECT 
-	e.first_name, e.last_name, d2.business_name, count(s.sale_id) AS Trans
+, RankedEmployees AS (
+	SELECT
+		e.first_name,
+		e.last_name,
+		tpd.dealership_id,
+		s.sale_id,
+		ROW_NUMBER() OVER (PARTITION BY tpd.dealership_id ORDER BY tpd.total_sales DESC) AS employee_rank
+	FROM
+		employees e
+	JOIN
+		sales s ON e.employee_id = s.employee_id 
+	JOIN
+		TopPerformingDealerships tpd ON s.dealership_id = tpd.dealership_id
+)
+
+SELECT
+	re.first_name,
+	re.last_name,
+	tpd.business_name,
+	--re.sale_id,
+	re.employee_rank,
+	tpd.total_sales AS dealership_total_sales --used this INSTEAD OF r.sale_id--
 FROM 
-	employees e
+	RankedEmployees re
 JOIN 
-	sales s ON s.employee_id = e.employee_id
-JOIN	
-	dealershipemployees d2 ON d2.employee_id  = s.employee_id 	
-GROUP BY e.first_name , e.last_name , d2.business_name
-ORDER BY Trans DESC
+		TopPerformingDealerships tpd ON re.dealership_id = tpd.dealership_id
+WHERE
+    	re.employee_rank = 1
+ORDER BY 
+	tpd.total_sales DESC, re.sale_id;
+
+
+--2.	For the top 5 dealerships, which vehicle models were the most popular in sales?
+
+still need the top 5 dealerships, lets amend this AND INCLUDE the car details INSTEAD.
+dealerships, sales, vehicles, vehicletypes CONTAINS the make AND the vihicle_type_id
+
+vehicletypes - vehicle_type_id
++
+vehicles - vehicle_type_id
+
+
+vehicles - vehicle_id
++
+sales - vehicle_id
+
+
+WITH TopPerformingDealerships AS (
+
+	SELECT 
+		d.business_name,
+		s.dealership_id, 
+		count(s.sale_id) AS total_sales
+	FROM dealerships d 
+	JOIN sales s ON d.dealership_id = s.dealership_id 
+	GROUP BY d.business_name, s.dealership_id 
+	ORDER BY total_sales DESC
+	LIMIT 5
+
+)
+
+, RankedCars AS (
+	SELECT
+		e.first_name,
+		e.last_name,
+		tpd.dealership_id,
+		s.sale_id,
+		ROW_NUMBER() OVER (PARTITION BY tpd.---- ORDER BY tpd.--- DESC) AS Car_Rank
+	FROM
+		vehicles v
+	JOIN
+		vehicletypes v2 ON v.vehicle_type_id = v2.vehicle_type_id 
+	JOIN
+		TopPerformingDealerships tpd ON s.dealership_id = tpd.dealership_id
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--3.	For the top 5 dealerships, were there more sales or leases?*/
+
 
 
 --Used Cars
@@ -278,6 +339,55 @@ SELECT employee_id
 
 SELECT *
 FROM salestypes s 
+
+--Chapter 8
+
+/*Let's say your customer wants a list of total sales per employee in the database.
+
+A SUM() with a GROUP BY would give us this*/
+
+
+select
+	sales.employee_id,
+	sum(sales.price) total_employee_sales
+from
+	employees
+join
+	sales
+on
+	sales.employee_id = employees.employee_id
+group by
+	sales.employee_id
+ORDER BY sales.employee_id 
+
+/*The issue with this, is that you can't put names with the employees using a group by. You could put the select in a CTE or a subquery, or you could use a window function.
+
+The OVER() function is what makes this a windows function. The default for OVER() is the entire rowset. It will apply the function--SUM()--to the entire dataset, in this case total sales. If we want to break the data into parts, we partition it by the data we want to group it by. In this query, we are partitioning by the employee id so get total sales per employee.
+
+By running a windows function, we can get the employee's name, as well as aggregate queries all in one query.*/
+
+
+select distinct
+	employees.last_name || ', ' || employees.first_name AS employee_name,
+	sales.employee_id,
+	sum(sales.price) over() AS total_sales,
+	sum(sales.price) over(partition by employees.employee_id) AS total_employee_sales
+from
+	employees
+join
+	sales
+on
+	sales.employee_id = employees.employee_id
+order by employee_name
+
+-------
+
+/* Final Notes for 8/15 - We finished the top 5 dealerships and the top selling employees.  We're working on the second
+ * question asking for the top selling cars, but having issues replicating something similar to employees top rank.  William 
+ * put in our slack channel what he did to put together this list.  Lets try to pull this apart and compare to how we would
+ * do this statement differently...if possible...
+ */
+
 
 
 
