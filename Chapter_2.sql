@@ -388,6 +388,201 @@ order by employee_name
  * do this statement differently...if possible...
  */
 
+--------------------------------------
+
+--Chapter 9
+--Purchase Income by Dealership
+
+--1. Write a query that shows the total purchase sales income per dealership.
+
+Answer:
+
+SELECT DISTINCT 
+d.business_name, 
+sum(s.price) over() AS overall_sales,
+sum(s.price) over(partition by d.business_name) AS total_dealership_sales
+FROM dealerships d 
+JOIN sales s ON d.dealership_id = s.dealership_id 
+ORDER BY business_name  ASC ;
+
+--2. Write a query that shows the purchase sales income per dealership for July of 2020.
+
+SELECT DISTINCT 
+d.business_name, 
+sum(s.price) over(partition by d.business_name) AS total_dealership_sales
+FROM dealerships d 
+JOIN sales s ON d.dealership_id = s.dealership_id 
+WHERE s.sales_type_id  = 1 AND s.purchase_date BETWEEN '7/1/2020' AND '7/31/2020'
+ORDER BY business_name  ASC ;
+
+--3. Write a query that shows the purchase sales income per dealership for all of 2020.
+
+SELECT DISTINCT 
+d.business_name, 
+sum(s.price) over(partition by d.business_name) AS total_dealership_sales
+FROM dealerships d 
+JOIN sales s ON d.dealership_id = s.dealership_id 
+WHERE s.sales_type_id  = 1 AND s.purchase_date BETWEEN '1/1/2020' AND '12/31/2020'
+ORDER BY business_name  ASC ;
+
+--Lease Income by Dealership
+
+--1. Write a query that shows the total lease income per dealership.
+
+SELECT DISTINCT 
+d.business_name, 
+sum(s.price) over(partition by d.business_name) AS total_dealership_leases
+FROM dealerships d 
+JOIN sales s ON d.dealership_id = s.dealership_id 
+WHERE s.sales_type_id  = 2 --AND s.purchase_date BETWEEN '1/1/2020' AND '12/31/2020'
+ORDER BY total_dealership_leases  ASC ;
 
 
+--2. Write a query that shows the lease income per dealership for Jan of 2020.
 
+SELECT DISTINCT 
+d.business_name, 
+sum(s.price) over(partition by d.business_name) AS total_dealership_leases
+FROM dealerships d 
+JOIN sales s ON d.dealership_id = s.dealership_id 
+WHERE s.sales_type_id  = 2 AND s.purchase_date BETWEEN '1/1/2020' AND '1/31/2020'
+ORDER BY total_dealership_leases  ASC ;
+
+
+--3. Write a query that shows the lease income per dealership for all of 2019.
+
+SELECT DISTINCT 
+d.business_name, 
+sum(s.price) over(partition by d.business_name) AS total_dealership_leases
+FROM dealerships d 
+JOIN sales s ON d.dealership_id = s.dealership_id 
+WHERE s.sales_type_id  = 2 AND s.purchase_date BETWEEN '1/1/2019' AND '12/31/2019'
+ORDER BY total_dealership_leases  ASC ;
+
+--Total Income by Employee
+
+--1. Write a query that shows the total income (purchase and lease) per employee.
+
+SELECT DISTINCT 
+e.last_name || ', ' || e.first_name AS employee_name,
+sum(s.price) over(partition by e.business_name) AS employee_leases_sales
+FROM dealerships d 
+JOIN sales s ON d.dealership_id = s.dealership_id 
+JOIN employee e ON s.employee_id = e.employee_id 
+ORDER BY employee_leases_sales  ASC ;
+
+
+------------------------------------------------------------
+
+-Chapter 10
+
+--Available Models
+
+--1. Which model of vehicle has the lowest current inventory? This will help 
+--dealerships know which models the purchase from manufacturers.
+
+--Answer: the model with the lowest current inventory is the MX-5 Miata
+
+SELECT DISTINCT
+v2.model,
+count(NULLIF(v.is_sold = FALSE,true)) AS unsold_car_count,
+count(NULLIF(v.is_sold = true, true)) AS sold_car_count
+FROM vehicles v 
+JOIN vehicletypes v2 ON v.vehicle_type_id = v2.vehicle_type_id
+GROUP BY v2.model 
+ORDER BY unsold_car_count ASC;
+
+
+--2.  Which model of vehicle has the highest current inventory? This will help 
+--dealerships know which models are, perhaps, not selling.
+
+--Answer: Highest unsold CURRENT inventory IS the Maxima.
+SELECT DISTINCT 
+v2.model,
+count(v.vehicle_type_id) over(partition by v2.model) AS vehicle_inventory
+FROM 
+	vehicles v 
+JOIN 
+	vehicletypes v2 ON v.vehicle_type_id = v2.vehicle_type_id
+WHERE 
+		v.is_sold = FALSE
+ORDER BY vehicle_inventory DESC;
+
+--testing the data to see if im getting a match on the count for the top vehicle that hasnt sold--
+SELECT *
+FROM vehicles v 
+JOIN vehicletypes v2 ON v.vehicle_type_id =v2.vehicle_type_id 
+WHERE v2.model = 'Maxima' AND v.is_sold = FALSE 
+
+--Here's another way of pulling the information: 
+
+SELECT DISTINCT
+v2.model,
+count(NULLIF(v.is_sold = FALSE,true)) AS unsold_inventory,
+count(NULLIF(v.is_sold = true, true)) AS sold_cars
+FROM vehicles v 
+JOIN vehicletypes v2 ON v.vehicle_type_id = v2.vehicle_type_id
+GROUP BY v2.model 
+ORDER BY unsold_inventory desc
+
+--Diverse Dealerships
+
+--1. Which dealerships are currently selling the least number of vehicle models? This will 
+--let dealerships market vehicle models more effectively per region.
+
+
+SELECT
+    s.dealership_id, d.business_name ,
+    v2.make ,
+    SUM(s.price) AS total_sales_amount,
+    RANK() OVER (ORDER BY SUM(s.price)) AS sales_rank
+FROM
+    sales s
+JOIN	
+	vehicles v ON s.vehicle_id = v.vehicle_id 
+JOIN
+	vehicletypes v2 ON v.vehicle_type_id = v.vehicle_id
+JOIN 
+	dealerships d ON s.dealership_id = d.dealership_id 
+GROUP BY
+    s.dealership_id, d.business_name, v2.make
+ORDER BY
+    sales_rank;
+
+
+--2.Which dealerships are currently selling the highest number of vehicle models? This will 
+--let dealerships know which regions have either a high population, or less brand loyalty.
+
+
+SELECT
+    s.dealership_id, d.business_name ,
+    v2.make ,
+    SUM(s.price) AS total_sales_amount,
+    DENSE_RANK() OVER (ORDER BY SUM(s.price)) AS sales_rank
+FROM
+    sales s
+JOIN	
+	vehicles v ON s.vehicle_id = v.vehicle_id 
+JOIN
+	vehicletypes v2 ON v.vehicle_type_id = v.vehicle_id
+JOIN 
+	dealerships d ON s.dealership_id = d.dealership_id 
+GROUP BY
+    s.dealership_id, d.business_name, v2.make
+ORDER BY
+    sales_rank DESC;
+
+------------------------------
+   
+--Chapter 11
+-- question 3 chapter 1   
+-- go back to chapter one and enter in some information that's requested because Kennie should show up at 3 locations.   
+   
+ SELECT *
+ FROM dealershipemployees d 
+ LEFT JOIN employees e USING (employee_id)
+ WHERE first_name = 'Kennie'
+ 
+ 
+ 
+   
