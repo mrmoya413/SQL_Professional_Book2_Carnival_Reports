@@ -575,14 +575,268 @@ ORDER BY
 ------------------------------
    
 --Chapter 11
--- question 3 chapter 1   
--- go back to chapter one and enter in some information that's requested because Kennie should show up at 3 locations.   
+--Carnival Sales Reps
    
- SELECT *
- FROM dealershipemployees d 
- LEFT JOIN employees e USING (employee_id)
- WHERE first_name = 'Kennie'
- 
- 
+   
+/* Quick Note: question 3 chapter 1   
+-- go back to chapter one and enter in some information that's requested because Kennie should show up at 3 locations. */
+   
+ --1.  How many emloyees are there for each role?
+   
+--Answer:   
+   
+SELECT 
+e2.employee_type_name  as Department_name,
+count(e.employee_id) AS Employee_Count
+FROM employees e 
+JOIN employeetypes e2 ON e.employee_type_id  = e2.employee_type_id 
+GROUP BY e2.employee_type_name
+ORDER BY e2.employee_type_name DESC;
+
+--2.  How many finance managers work at each dealership?
+
+--Answer:
+
+SELECT  
+e2.employee_type_name  as Department_name, d2.dealership_id,
+d2.business_name,
+count(e.employee_id) AS Employee_Count
+FROM employees e 
+JOIN employeetypes e2 ON e.employee_type_id  = e2.employee_type_id 
+JOIN dealershipemployees d ON e.employee_id = d.employee_id 
+JOIN dealerships d2 ON d.dealership_id = d2.dealership_id 
+WHERE e2.employee_type_name = 'Finance Manager'
+GROUP BY e2.employee_type_name, business_name, d2.dealership_id
+ORDER BY d2.business_name  ASC
+
+---Double checking the numbers and the table below confirms the data I'm getting above.
+
+SELECT *
+FROM employees e
+JOIN dealershipemployees d ON e.employee_id = d.employee_id 
+WHERE employee_type_id = 2 AND dealership_id = 23
+   
+--3.  Get the names of the top 3 employees who work shifts at the most dealerships?
+
+--I first located the employees that come up more than once on the dealershipemployees table.
+
+SELECT *
+FROM
+    dealershipemployees
+--WHERE employee_id = 35
+ORDER BY employee_id asc;
+
+   
+SELECT employee_id
+FROM dealershipemployees
+GROUP BY 1
+HAVING count(*) > 1
+ORDER BY 1
+
+
+SELECT *
+FROM employeetypes e 
+
+
+
+----
+
+SELECT
+    employee_id
+FROM
+    (
+        SELECT
+            employee_id
+        FROM
+            dealershipemployees
+        GROUP BY
+            employee_id
+        HAVING
+            COUNT(*) > 1
+    ) AS employees_with_duplicates
+LIMIT 3;
+
+/*I looked and couldnt determine what might single out the top 3 employees.  My results came up WITH
+multiple employees that worked at another dealership, but not more than 2.*/
+
+   
+--4.  Get a report on the top two employees who has made the most sales through leasing vehicles.
+   
+Answer:
+
+SELECT s.employee_id, concat(e.last_name, ', ', e.first_name) AS Employee_Name,
+count(s.sale_id) AS Lease_Sales
+FROM employees e
+JOIN sales s ON e.employee_id = s.employee_id 
+JOIN salestypes s2 ON s.sales_type_id = s2.sales_type_id
+WHERE s2.sales_type_name = 'Lease'
+GROUP BY s.employee_id, Employee_name
+ORDER BY Lease_Sales DESC 
+LIMIT 2;
+
+------------------------------------------------------------------
+
+--Chapter 12
+
+--States With Most Customers
+
+/* 1. What are the top 5 US states with the most customers who have purchased a 
+vehicle from a dealership participating in the Carnival platform?*/
+
+--Answer:
+
+WITH Top_5_States AS (
+
+SELECT d.business_name, count(s.sale_id) AS Purchases, d.state
+FROM sales s 
+JOIN dealerships d ON s.dealership_id = d.dealership_id 
+JOIN salestypes s2 ON s.sales_type_id = s2.sales_type_id 
+WHERE s2.sales_type_name = 'Purchase'
+GROUP BY d.business_name, d.state
+
+)
+
+SELECT t5.business_name, t5.Purchases, t5.state
+FROM Top_5_States t5
+ORDER BY t5.Purchases DESC 
+LIMIT 5
+
+
+/*2. What are the top 5 US zipcodes with the most customers who have purchased a 
+vehicle from a dealership participating in the Carnival platform?*/
+
+Answer: 
+
+WITH Top_5_Zips AS (
+
+SELECT c.zipcode, count(s.sale_id) AS Purchases
+FROM sales s 
+JOIN customers c ON s.customer_id = c.customer_id 
+JOIN salestypes s2 ON s.sales_type_id = s2.sales_type_id 
+WHERE s2.sales_type_name = 'Purchase'
+GROUP BY c.zipcode 
+
+)
+
+SELECT t5z.zipcode, t5z.Purchases
+FROM Top_5_Zips t5z
+ORDER BY t5z.Purchases DESC 
+LIMIT 5
+
+
+--3. What are the top 5 dealerships with the most customers?
+
+--Answer:
+
+WITH Top_5_dealerships AS (
+
+SELECT d.business_name, count(s.customer_id) AS Customers
+FROM sales s 
+JOIN dealerships d ON s.dealership_id = d.dealership_id 
+JOIN salestypes s2 ON s.sales_type_id = s2.sales_type_id 
+--WHERE s2.sales_type_name = 'Purchase'
+GROUP BY d.business_name, d.state
+
+)
+
+SELECT t5.business_name, t5.Customers
+FROM Top_5_dealerships t5
+ORDER BY t5.Customers DESC 
+LIMIT 5
+
+-------------------------------------------------------------
+
+--Chapter 13
+--Practice: Carnival
+--1.  Create a view that lists all vehicle body types, makes and models.
+
+
+CREATE VIEW Vehicledetails AS 
+	SELECT v.body_type, v.make, v.model 
+	FROM vehicletypes v 
+
+
+SELECT *
+FROM vehicledetails 
+
+
+--2.  Create a view that shows the total number of employees for each employee type.
+
+CREATE VIEW Employeedetails AS
+	SELECT e2.employee_type_name, count(e.employee_id)
+	FROM employees e 
+	JOIN employeetypes e2 ON e.employee_type_id = e2.employee_type_id 
+	GROUP BY e2.employee_type_name 
+	
+SELECT *
+FROM employeedetails 
+
+
+--3.  Create a view that lists all customers without exposing their emails, phone numbers and street address.
+
+CREATE VIEW CustomerDetails AS 
+	SELECT c.customer_id, c.first_name, c.last_name, c.city, c.state, c.zipcode, c.company_name
+	FROM customers c 
+
+SELECT *
+FROM CustomerDetails
+
+
+--4.  Create a view named sales2018 that shows the total number of sales for each sales type for the year 2018.
+
+CREATE VIEW sales2018 AS 
+	SELECT s2.sales_type_name, count(s.sale_id)
+	FROM sales s 
+	JOIN salestypes s2 ON s.sales_type_id = s2.sales_type_id 
+	WHERE purchase_date BETWEEN '1/1/2018' AND '12/31/2018'
+	GROUP BY s2.sales_type_name 
+	
+	SELECT *
+	FROM sales2018
+
+--5.  Create a view that shows the employee at each dealership with the most number of sales.
+
+CREATE VIEW Topdealershipemployee AS
+
+WITH RankedEmployees AS (
+    SELECT
+        d.dealership_id,
+        e.employee_id,
+        e.first_name,
+        e.last_name,
+        COUNT(s.sale_id) AS total_sales,
+        RANK() OVER (PARTITION BY d.dealership_id ORDER BY COUNT(s.sale_id) DESC) AS sales_rank
+    FROM
+        dealerships d
+    JOIN
+        sales s ON d.dealership_id = s.dealership_id
+    JOIN
+        employees e ON s.employee_id = e.employee_id
+    GROUP BY
+        d.dealership_id, e.employee_id, e.first_name, e.last_name
+)
+SELECT
+    dealership_id,
+    employee_id,
+    first_name,
+    last_name,
+    total_sales
+FROM
+    RankedEmployees
+WHERE
+    sales_rank = 1;
+	
+	
+--double checking the numbers because im getting ties with the top selling salesman by each location.
+--looks like the information is correct.
+	
+SELECT s.employee_id, s.dealership_id, count(sale_id)
+FROM sales s 
+WHERE dealership_id  = '1'
+GROUP BY s.employee_id, s.dealership_id
+ORDER BY s.count desc;
+	
+SELECT *
+FROM Topdealershipemployee
  
    
