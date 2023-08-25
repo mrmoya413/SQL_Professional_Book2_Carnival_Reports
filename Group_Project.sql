@@ -16,7 +16,7 @@ Carnival would like to understand more about thier business and needs you to hel
 3. Which vehicle model generated the most sales income?
 
 ### Top Performance
-
+ls
 1. Which employees generate the most income per dealership?
 
 <br>
@@ -41,19 +41,12 @@ Carnival would like to understand more about thier business and needs you to hel
 --1.  Who are the top 5 employees for generating sales income?
 
 SELECT 
-	concat(e.last_name, ', ', e.first_name) AS EmployeeName,
+	concat(e.first_name , ', ', e.last_name) AS EmployeeName,
 	sum(s.price) AS SalesIncome
 FROM 
-	employees e 
+	sales s
 JOIN 
-	sales s ON e.employee_id = s.employee_id
-JOIN 
-	salestypes s2 ON s.sales_type_id  = s.sales_type_id 
-JOIN 
-	dealershipemployees d ON e.employee_id = d.employee_id 
-JOIN 
-	dealerships d2 ON d.dealership_id = d2.dealership_id
-WHERE s.sale_id IS NOT NULL  
+	employees e ON s.employee_id = e.employee_id
 GROUP BY 
 	EmployeeName
 ORDER BY
@@ -61,6 +54,8 @@ ORDER BY
 LIMIT 5;
 
 --2. Who are the top 5 dealership for generating sales income?
+
+--junes auto -- fix this --
 
 SELECT 
 	d2.business_name AS DealershipName,
@@ -101,7 +96,6 @@ ORDER BY
 	SalesIncome DESC
 LIMIT 1;
 
-
 --Top Performance
 
 --1. Which employees generate the most income per dealership?
@@ -134,7 +128,8 @@ SELECT
 FROM
     RankedEmployees
 WHERE
-    rankedemployees.sales_income_rank = 1;
+    rankedemployees.sales_income_rank = 1
+ORDER BY business_name;
 
 
 --Vehicle Reports
@@ -144,7 +139,7 @@ WHERE
    
 SELECT
 	v2.model,
-	count(v.vehicle_id)
+	count(v.vehicle_id) AS inventory_count
 FROM 
  	vehicles v 
 JOIN	
@@ -154,13 +149,13 @@ WHERE
 GROUP BY 
 	v2.model
 ORDER BY
-	v2.model
+	inventory_count desc
 
 --2. In our Vehicle inventory, show the count of each Make that is in stock.
    
 SELECT
 	v2.make,
-	count(v.vehicle_id)
+	count(v.vehicle_id) AS inventory_count
 FROM 
  	vehicles v 
 JOIN	
@@ -170,8 +165,8 @@ WHERE
 GROUP BY 
 	v2.make
 ORDER BY
-	v2.make
-	
+	inventory_count DESC 
+
 SELECT DISTINCT v.make
 FROM vehicletypes v 
    
@@ -196,22 +191,20 @@ ORDER BY
 --1. Which US state's customers have the highest average purchase price for a vehicle?
 	
 SELECT 
-	round(avg(s.price),2),
-	v2.make,
-	c.state
+	c.state,
+	round(avg(s.price),2) AS amt
 FROM 
 	sales s 
-JOIN 
-	customers c ON s.customer_id = s.customer_id 
-JOIN 
-	vehicles v ON v.vehicle_id = s.vehicle_id 
-JOIN 
-	vehicletypes v2 ON v.vehicle_type_id = v2.vehicle_type_id
-WHERE 
-	v.is_sold = TRUE 
+LEFT JOIN 
+	customers c ON c.customer_id  = s.customer_id 
+LEFT JOIN 
+	salestypes s2 ON s.sales_type_id = s2.sales_type_id 
+WHERE s2.sales_type_name  = 'Purchase'
 GROUP BY
-	v2.make, c.state
-	
+	c.state
+ORDER BY
+	amt DESC;
+
 	
 --2. Now using the data determined above, which 5 states have the customers with the highest average purchase price for a vehicle?*/
 
@@ -223,7 +216,7 @@ SELECT
 FROM 
 	sales s 
 JOIN 
-	customers c ON s.customer_id = s.customer_id 
+	customers c ON c.customer_id = s.customer_id 
 JOIN 
 	vehicles v ON v.vehicle_id = s.vehicle_id 
 JOIN 
@@ -234,13 +227,7 @@ GROUP BY
 	v2.make, c.state
 LIMIT 5;
 
-
-
-
-
-
-
-
+--note:  Watch when you're joining tables.  the joined the table below to itself "s.customer id = s.customer id" and it didn't correct you!
 
 
 
