@@ -1,4 +1,5 @@
 --Book 3
+
 --Chapter 1
 /*Practice: Employees
 Kristopher Blumfield an employee of Carnival has asked to be transferred to a different 
@@ -108,14 +109,41 @@ BEGIN
     WHERE is_sold = 1; 
 END;
 
+To run the stored proceedure:
+
+EXEC Removesoldvehicle;
+
+After discussing this with the tutors and classmates, I see what they're trying to create is a stored procedure that marks the vehicle as sold
+by simplying calling the store procedure and referencing the vehicle id that's getting updated.  That's completely different from what I
+understood the question being asked.  I was debating WHY they wanted to have this stored procedure.  I believed the question was asking to remove
+the vehicle information entirely, if the is_sold column was true.*/
+
+--Below is an example of the procedure based on what they interepreted the question to be.
+
+CREATE PROCEDURE vehicle_sold (IN vehicleid int)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	UPDATE vehicles 
+	SET is_sold = TRUE
+	WHERE vehicle_id = vehicleid;
+	
+	COMMIT;
+END
+$$;
+
+CALL vehicle_sold(1)
+
+SELECT *
+FROM vehicles v 
+ORDER BY vehicle_id asc; 
+
+UPDATE vehicles 
+SET is_sold = FALSE 
+WHERE vehicle_id = 1
 
 
- To run the stored proceedure:
-
-
-EXEC DeleteSoldVehicles;
-
-*/
+--here is the update for when a car is returned:
 
 
 /*2.  Need additional information here.  Because according to the requested stored proceedure above,
@@ -123,12 +151,41 @@ I would've deleted the vehicle details that were sold.  How would I bring this b
 table to store the sold vehicle details.  ORRR never delete the sold vehicles in the first place.  That's why
 the column "is_sold" was created. */
 
+CREATE PROCEDURE vehicle_returned (IN vehicleid int)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	UPDATE vehicles 
+	SET is_sold = false
+	WHERE vehicle_id = vehicleid;
+	
+	UPDATE sales 
+	SET sale_returned = TRUE 
+	WHERE vehicle_id = vehicleid;
+
+	COMMIT;
+END
+$$;
+
+CALL vehicle_returned(1)
+
+
+---------------------------------------------------------------------
+
+--Chapter 5:
+
+/*1.  Create a trigger for when a new Sales record is added, set the purchase date to 3 days from the current date.*/
 
 
 
 
- 
- 
+
+
+
+/*2.  Create a trigger for updates to the Sales table. If the pickup date is on or before the purchase date, set the pickup date to 7 days after 
+the purchase date. If the pickup date is after the purchase date but less than 7 days out from the purchase date, add 4 additional days to 
+the pickup date.*/
+
 
 
 
