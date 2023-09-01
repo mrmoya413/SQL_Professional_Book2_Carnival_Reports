@@ -177,7 +177,7 @@ CALL vehicle_returned(1)
 /*1.  Create a trigger for when a new Sales record is added, set the purchase date to 3 days from the current date.*/
 
 
-
+test
 
 
 
